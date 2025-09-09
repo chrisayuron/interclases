@@ -32,6 +32,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 0.5rem;
         }
         .btn-primary {
             background-color: #16a34a; /* green-600 */
@@ -62,6 +63,10 @@
             outline: none;
             border-color: #16a34a;
             box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+        }
+        .input-field:read-only {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
         }
         .table-header {
             background-color: #f3f4f6;
@@ -129,13 +134,13 @@
                             <div class="flex gap-2">
                                 <input type="text" id="team-name" class="input-field" placeholder="Nombre del curso (Ej: 11-A)">
                                 <button onclick="app.addTeam()" class="btn btn-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                                     Añadir
                                 </button>
                             </div>
                             <div id="teams-list" class="mt-4 space-y-2"></div>
                             <button id="clear-teams-btn" onclick="app.clearTeams()" class="btn btn-danger w-full mt-4 hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 Limpiar Equipos
                             </button>
                         </div>
@@ -149,7 +154,7 @@
                             <p class="text-gray-600 mb-4">Una vez añadidos todos los equipos, genera el calendario de partidos (formato todos contra todos).</p>
                             <button id="generate-schedule-btn" onclick="app.generateSchedule()" class="btn btn-secondary w-full" disabled>Generar Calendario</button>
                             <button id="reset-tournament-btn" onclick="app.resetTournament()" class="btn btn-danger w-full mt-4 hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4a15.915 15.915 0 0112 0M20 20a15.915 15.915 0 01-12 0" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4a15.915 15.915 0 0112 0M20 20a15.915 15.915 0 01-12 0" /></svg>
                                 Reiniciar Torneo Completo
                             </button>
                         </div>
@@ -164,7 +169,7 @@
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                             Calendario de Partidos
                         </h2>
-                        <div id="schedule-list" class="space-y-4"></div>
+                        <div id="schedule-list" class="space-y-6"></div>
                     </div>
 
                     <!-- Sección de Tabla de Posiciones -->
@@ -183,6 +188,30 @@
                                     </tr>
                                 </thead>
                                 <tbody id="standings-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                     <!-- Sección de Goleadores -->
+                    <div id="top-scorers-section" class="card hidden">
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                            </svg>
+                            Goleadores del Torneo
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm text-left">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="p-2">Pos</th>
+                                        <th class="p-2">Jugador</th>
+                                        <th class="p-2">Equipo</th>
+                                        <th class="p-2 text-center">Goles</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top-scorers-body">
                                 </tbody>
                             </table>
                         </div>
@@ -211,8 +240,12 @@
         <datalist id="player-names"></datalist>
 
     </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script>
         const App = function() {
             // Estado local de la aplicación
             this.teams = [];
@@ -220,9 +253,13 @@
             this.finalMatch = null;
             this.masterPassword = 'profezor123';
             this.isAuthenticated = false;
+            
+            // Firebase
             this.db = null;
-            this.DB_NAME = 'TournamentDB';
-            this.STORE_NAME = 'tournamentState';
+            this.auth = null;
+            this.userId = null;
+            this.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            this.unsubscribe = null; // Para el listener de Firestore
 
             // --- MODAL ---
             this.showAlert = function(message) {
@@ -285,63 +322,71 @@
                 document.getElementById('modal').classList.add('hidden');
             }
             
-            // --- INICIALIZACIÓN Y GESTIÓN DE INDEXEDDB ---
-            this.init = function() {
-                const request = indexedDB.open(this.DB_NAME, 1);
+            // --- INICIALIZACIÓN Y GESTIÓN DE FIREBASE ---
+            this.init = async function() {
+                try {
+                    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                    const firebaseApp = initializeApp(firebaseConfig);
+                    this.db = getFirestore(firebaseApp);
+                    this.auth = getAuth(firebaseApp);
 
-                request.onerror = (event) => {
-                    console.error("Error al abrir IndexedDB:", event.target.error);
-                    this.showAlert("No se pudo iniciar la base de datos local para guardar la información.");
-                };
+                    onAuthStateChanged(this.auth, async (user) => {
+                        if (user) {
+                            this.userId = user.uid;
+                            this.setupFirestoreListener();
+                        } else {
+                            if (typeof __initial_auth_token !== 'undefined') {
+                                await signInWithCustomToken(this.auth, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(this.auth);
+                            }
+                        }
+                    });
 
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-                        db.createObjectStore(this.STORE_NAME);
-                    }
-                };
+                } catch (error) {
+                    console.error("Error inicializando Firebase:", error);
+                    this.showAlert("No se pudo conectar a la base de datos en la nube.");
+                }
 
-                request.onsuccess = (event) => {
-                    this.db = event.target.result;
-                    this.loadState();
-                };
+                 this.checkAuth();
             }
-
-            this.loadState = function() {
-                if (!this.db) return;
-                const transaction = this.db.transaction(this.STORE_NAME, 'readonly');
-                const store = transaction.objectStore(this.STORE_NAME);
-                const request = store.get('currentState');
-
-                request.onsuccess = (event) => {
-                    const state = event.target.result;
-                    if (state) {
+            
+            this.setupFirestoreListener = function() {
+                if (this.unsubscribe) this.unsubscribe(); 
+                
+                const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
+                this.unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const state = docSnap.data();
                         this.teams = state.teams || [];
                         this.schedule = state.schedule || [];
                         this.finalMatch = state.finalMatch || null;
+                    } else {
+                        this.teams = [];
+                        this.schedule = [];
+                        this.finalMatch = null;
                     }
-                    this.checkAuth();
-                };
-
-                request.onerror = (event) => {
-                     console.error("Error al cargar el estado:", event.target.error);
-                     this.checkAuth(); // Check auth even if loading fails
-                }
+                    if(this.isAuthenticated) this.renderAll();
+                }, (error) => {
+                    console.error("Error escuchando cambios en Firestore: ", error);
+                });
             }
             
-            this.saveState = function() {
-                if (!this.db) return;
-                const transaction = this.db.transaction(this.STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(this.STORE_NAME);
-                const state = {
-                    teams: this.teams,
-                    schedule: this.schedule,
-                    finalMatch: this.finalMatch,
-                };
-                store.put(state, 'currentState');
+            this.saveStateToFirestore = async function() {
+                if (!this.userId) return;
+                try {
+                    const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
+                    await setDoc(docRef, {
+                        teams: JSON.parse(JSON.stringify(this.teams)), // Limpiar objetos para Firestore
+                        schedule: JSON.parse(JSON.stringify(this.schedule)),
+                        finalMatch: JSON.parse(JSON.stringify(this.finalMatch)),
+                    });
+                } catch (error) {
+                    console.error("Error guardando en Firestore: ", error);
+                    this.showAlert("Hubo un error al guardar los datos.");
+                }
             }
 
-            // --- GESTIÓN DE AUTENTICACIÓN ---
             this.checkAuth = function() {
                 const loginBtn = document.getElementById('login-btn');
                 const passwordInput = document.getElementById('password-input');
@@ -365,15 +410,13 @@
                 }
             }
 
-            // --- GESTIÓN DE EQUIPOS ---
             this.addTeam = function() {
                 const teamNameInput = document.getElementById('team-name');
                 const name = teamNameInput.value.trim();
                 if (name && !this.teams.some(team => team.name === name)) {
                     this.teams.push({ name, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0, pts: 0 });
                     teamNameInput.value = '';
-                    this.saveState();
-                    this.renderTeams();
+                    this.saveStateToFirestore();
                 } else if (!name) {
                     this.showAlert("Por favor, introduce un nombre para el equipo.");
                 } else {
@@ -387,19 +430,16 @@
                     return;
                 }
                 this.teams.splice(index, 1);
-                this.saveState();
-                this.renderTeams();
+                this.saveStateToFirestore();
             }
             
             this.clearTeams = function() {
                  this.showPasswordConfirm("¿Estás seguro de que deseas eliminar todos los equipos?", () => {
                     this.teams = [];
-                    this.saveState();
-                    this.renderTeams();
+                    this.saveStateToFirestore();
                  });
             }
             
-            // --- GESTIÓN DEL TORNEO ---
             this.generateSchedule = function() {
                 if (this.teams.length < 2) {
                     this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
@@ -408,32 +448,91 @@
                 this.schedule = [];
                 for (let i = 0; i < this.teams.length; i++) {
                     for (let j = i + 1; j < this.teams.length; j++) {
-                        this.schedule.push({ team1: this.teams[i].name, team2: this.teams[j].name, score1: null, score2: null, played: false, bestPlayer: '' });
+                        this.schedule.push({ 
+                            team1: this.teams[i].name, 
+                            team2: this.teams[j].name, 
+                            score1: null, 
+                            score2: null, 
+                            played: false, 
+                            bestPlayer: '', 
+                            scorers: [] 
+                        });
                     }
                 }
-                this.saveState();
-                this.renderAll();
+                this.saveStateToFirestore();
             }
 
             this.updateScore = function(index) {
-                const score1 = parseInt(document.getElementById(`score1-${index}`).value);
-                const score2 = parseInt(document.getElementById(`score2-${index}`).value);
-                const bestPlayer = document.getElementById(`best-player-${index}`).value.trim();
+                const score1Input = document.getElementById(`score1-${index}`);
+                const score2Input = document.getElementById(`score2-${index}`);
+                const bestPlayerInput = document.getElementById(`best-player-${index}`);
+
+                const score1 = parseInt(score1Input.value);
+                const score2 = parseInt(score2Input.value);
+                const bestPlayer = bestPlayerInput.value.trim();
 
                 if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
                     this.schedule[index].score1 = score1;
                     this.schedule[index].score2 = score2;
                     this.schedule[index].played = true;
                     this.schedule[index].bestPlayer = bestPlayer;
-                    this.saveState();
-                    this.renderAll();
+                    this.saveStateToFirestore();
                 } else {
                     this.showAlert("Por favor, introduce un marcador válido (números no negativos).");
                 }
             }
 
+            this.requestEditMatch = function(index, isFinal = false) {
+                this.showPasswordConfirm("Introduce la clave para editar el marcador.", () => {
+                    const idPrefix = isFinal ? 'final' : index;
+                    document.getElementById(`score1-${idPrefix}`).readOnly = false;
+                    document.getElementById(`score2-${idPrefix}`).readOnly = false;
+                    document.getElementById(`best-player-${idPrefix}`).readOnly = false;
+
+                    document.getElementById(`score1-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    document.getElementById(`score2-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    document.getElementById(`best-player-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+
+                    document.getElementById(`edit-btn-${idPrefix}`).classList.add('hidden');
+                    document.getElementById(`save-btn-${idPrefix}`).classList.remove('hidden');
+                });
+            }
+            
+            this.addScorer = function(matchIndex, isFinal = false) {
+                const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
+                const idPrefix = isFinal ? 'final' : matchIndex;
+                const playerNameInput = document.getElementById(`scorer-name-${idPrefix}`);
+                const teamSelect = document.getElementById(`scorer-team-${idPrefix}`);
+                
+                const playerName = playerNameInput.value.trim();
+                const teamName = teamSelect.value;
+
+                if (playerName && teamName) {
+                    if (!match.scorers) match.scorers = [];
+                    match.scorers.push({ player: playerName, team: teamName });
+                    playerNameInput.value = '';
+                    this.saveStateToFirestore();
+                } else {
+                    this.showAlert("Por favor, introduce el nombre del jugador y selecciona su equipo.");
+                }
+            }
+
+            this.removeScorer = function(matchIndex, scorerIndex, isFinal = false) {
+                const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
+                if (match && match.scorers) {
+                    match.scorers.splice(scorerIndex, 1);
+                    this.saveStateToFirestore();
+                }
+            }
+
             this.calculateTeamStats = function() {
-                this.teams.forEach(team => { team.pj=0; team.g=0; team.e=0; team.p=0; team.gf=0; team.gc=0; team.dg=0; team.pts=0; });
+                // PRIMERO: Reiniciar todas las estadísticas a CERO.
+                this.teams.forEach(team => { 
+                    team.pj=0; team.g=0; team.e=0; team.p=0; 
+                    team.gf=0; team.gc=0; team.dg=0; team.pts=0; 
+                });
+                
+                // SEGUNDO: Recalcular desde cero iterando sobre todos los partidos jugados.
                 this.schedule.forEach(match => {
                     if (match.played) {
                         const t1 = this.teams.find(t => t.name === match.team1);
@@ -454,8 +553,8 @@
             this.checkIfTournamentFinished = function() {
                 const allPlayed = this.schedule.length > 0 && this.schedule.every(m => m.played);
                 if(allPlayed && !this.finalMatch && this.teams.length >= 2) {
-                   this.finalMatch = { team1: this.teams[0].name, team2: this.teams[1].name, score1: null, score2: null, played: false, winner: null, bestPlayer: '' };
-                   this.saveState();
+                   this.finalMatch = { team1: this.teams[0].name, team2: this.teams[1].name, score1: null, score2: null, played: false, winner: null, bestPlayer: '', scorers: [] };
+                   this.saveStateToFirestore();
                 }
             }
             
@@ -468,61 +567,90 @@
                     this.finalMatch.score1 = score1; this.finalMatch.score2 = score2; this.finalMatch.played = true; this.finalMatch.bestPlayer = bestPlayer;
                     if (score1 > score2) { this.finalMatch.winner = this.finalMatch.team1; }
                     else if (score2 > score1) { this.finalMatch.winner = this.finalMatch.team2; }
-                    else { this.finalMatch.winner = null; this.showAlert("El partido finalizó en empate. Definan por penales e introduzcan el marcador final."); }
-                    this.saveState();
-                    this.renderAll();
+                    else { 
+                        this.finalMatch.played = false; // Mantiene el partido como no jugado si es empate
+                        this.showAlert("El partido finalizó en empate. Definan por penales e introduzcan el marcador final."); 
+                    }
+                    this.saveStateToFirestore();
                  } else { this.showAlert("Por favor, introduce un marcador válido."); }
             }
             
             this.resetTournament = function() {
-                this.showPasswordConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual.", () => {
-                    if (!this.db) return;
-                    const transaction = this.db.transaction(this.STORE_NAME, 'readwrite');
-                    const store = transaction.objectStore(this.STORE_NAME);
-                    const request = store.clear();
-                    
-                    request.onsuccess = () => {
-                        this.teams = [];
-                        this.schedule = [];
-                        this.finalMatch = null;
-                        this.saveState(); // Save the cleared state
-                        this.renderAll(true);
-                    };
-                    request.onerror = (e) => {
-                        console.error("Error al reiniciar el torneo:", e.target.error);
+                this.showPasswordConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual.", async () => {
+                    if (!this.userId) return;
+                    try {
+                        const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
+                        await deleteDoc(docRef);
+                    } catch (error) {
+                         console.error("Error al reiniciar el torneo:", error);
                         this.showAlert("No se pudo reiniciar el torneo.");
                     }
                 });
             }
 
-            // --- RENDERIZADO DE LA UI ---
             this.renderPlayerDatalist = function() {
                 const playerNames = new Set();
                 this.schedule.forEach(match => {
-                    if (match.bestPlayer && match.bestPlayer.trim() !== '') {
-                        playerNames.add(match.bestPlayer.trim());
+                    if (match.bestPlayer) playerNames.add(match.bestPlayer);
+                    if (match.scorers) match.scorers.forEach(s => playerNames.add(s.player));
+                });
+                if (this.finalMatch) {
+                    if (this.finalMatch.bestPlayer) playerNames.add(this.finalMatch.bestPlayer);
+                    if (this.finalMatch.scorers) this.finalMatch.scorers.forEach(s => playerNames.add(s.player));
+                }
+                const datalist = document.getElementById('player-names');
+                datalist.innerHTML = Array.from(playerNames).filter(Boolean).map(name => `<option value="${name}"></option>`).join('');
+            }
+            
+            this.calculateAndRenderTopScorers = function() {
+                const section = document.getElementById('top-scorers-section');
+                if (this.schedule.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+                section.classList.remove('hidden');
+
+                const scorerMap = new Map();
+                this.schedule.forEach(match => {
+                    if(match.scorers) {
+                        match.scorers.forEach(scorer => {
+                            const key = `${scorer.player}-${scorer.team}`;
+                            if (!scorerMap.has(key)) {
+                                scorerMap.set(key, { player: scorer.player, team: scorer.team, goals: 0 });
+                            }
+                            scorerMap.get(key).goals++;
+                        });
                     }
                 });
-                if (this.finalMatch && this.finalMatch.bestPlayer && this.finalMatch.bestPlayer.trim() !== '') {
-                    playerNames.add(this.finalMatch.bestPlayer.trim());
-                }
 
-                const datalist = document.getElementById('player-names');
-                if (datalist) {
-                    datalist.innerHTML = Array.from(playerNames).map(name => `<option value="${name}"></option>`).join('');
+                 if (this.finalMatch && this.finalMatch.scorers) {
+                    this.finalMatch.scorers.forEach(scorer => {
+                        const key = `${scorer.player}-${scorer.team}`;
+                        if (!scorerMap.has(key)) {
+                            scorerMap.set(key, { player: scorer.player, team: scorer.team, goals: 0 });
+                        }
+                        scorerMap.get(key).goals++;
+                    });
                 }
+                
+                const sortedScorers = Array.from(scorerMap.values()).sort((a, b) => b.goals - a.goals || a.player.localeCompare(b.player));
+                
+                const body = document.getElementById('top-scorers-body');
+                body.innerHTML = sortedScorers.map((scorer, index) => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 font-bold">${index + 1}</td>
+                        <td class="p-2">${scorer.player}</td>
+                        <td class="p-2 text-gray-600">${scorer.team}</td>
+                        <td class="p-2 text-center font-bold">${scorer.goals}</td>
+                    </tr>
+                `).join('');
             }
 
-            this.renderAll = function(isReset = false) {
+            this.renderAll = function() {
                 if (!this.isAuthenticated) return;
                 
                 this.calculateTeamStats();
-
-                if (isReset) {
-                    document.getElementById('main-content').classList.remove('hidden');
-                    document.getElementById('winner-section').classList.add('hidden');
-                }
-
+                
                 const scheduleGenerated = this.schedule.length > 0;
                 document.getElementById('team-name').disabled = scheduleGenerated;
                 document.getElementById('config-panel').classList.toggle('opacity-50', scheduleGenerated);
@@ -531,6 +659,7 @@
                 this.renderTeams();
                 this.renderSchedule();
                 this.renderStandings();
+                this.calculateAndRenderTopScorers();
                 
                 this.checkIfTournamentFinished();
                 
@@ -568,26 +697,58 @@
                 const section = document.getElementById('schedule-section');
                 section.classList.toggle('hidden', this.schedule.length === 0);
                 const list = document.getElementById('schedule-list');
-                list.innerHTML = this.schedule.map((match, index) => `
-                    <div class="border p-3 rounded-lg ${match.played ? 'bg-gray-50' : ''}">
-                        <div class="grid grid-cols-12 gap-2 items-center text-center">
-                            <div class="col-span-4 text-right font-semibold">${match.team1}</div>
-                            <div class="col-span-1"><input type="number" min="0" id="score1-${index}" class="input-field text-center" value="${match.score1 ?? ''}"></div>
-                            <div class="col-span-1 font-bold">vs</div>
-                            <div class="col-span-1"><input type="number" min="0" id="score2-${index}" class="input-field text-center" value="${match.score2 ?? ''}"></div>
-                            <div class="col-span-5 text-left font-semibold">${match.team2}</div>
+                list.innerHTML = this.schedule.map((match, index) => {
+                    const isPlayed = match.played;
+                    const readonlyAttr = isPlayed ? 'readonly' : '';
+                    const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
+
+                    return `
+                    <div class="border p-4 rounded-lg ${isPlayed ? 'bg-gray-50' : ''}">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="sm:w-1/3 text-center sm:text-right font-semibold text-lg">${match.team1}</div>
+                            <div class="flex items-center justify-center gap-2">
+                                <input type="number" min="0" id="score1-${index}" class="input-field text-center w-16 text-xl font-bold ${readonlyClass}" value="${match.score1 ?? ''}" ${readonlyAttr}>
+                                <span class="font-bold text-gray-400">vs</span>
+                                <input type="number" min="0" id="score2-${index}" class="input-field text-center w-16 text-xl font-bold ${readonlyClass}" value="${match.score2 ?? ''}" ${readonlyAttr}>
+                            </div>
+                            <div class="sm:w-1/3 text-center sm:text-left font-semibold text-lg">${match.team2}</div>
                         </div>
-                        <div class="mt-2 flex items-center justify-center gap-2">
+
+                        <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
                             <label for="best-player-${index}" class="text-sm font-semibold whitespace-nowrap">🏅 Mejor Jugador:</label>
-                            <input type="text" id="best-player-${index}" class="input-field" placeholder="Nombre del jugador" value="${match.bestPlayer || ''}" list="player-names">
-                            <button onclick="app.updateScore(${index})" class="btn btn-primary p-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
+                            <input type="text" id="best-player-${index}" class="input-field ${readonlyClass}" placeholder="Nombre" value="${match.bestPlayer || ''}" list="player-names" ${readonlyAttr}>
+                            
+                            <button id="save-btn-${index}" onclick="app.updateScore(${index})" class="btn btn-primary p-2 ${isPlayed ? 'hidden' : ''}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                <span>Guardar</span>
+                            </button>
+                             <button id="edit-btn-${index}" onclick="app.requestEditMatch(${index})" class="btn btn-secondary p-2 ${!isPlayed ? 'hidden' : ''}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                <span>Editar</span>
                             </button>
                         </div>
+                        <hr class="my-4">
+                        <div class="text-sm">
+                            <h4 class="font-semibold mb-2 text-center">Goles del Partido</h4>
+                            <div class="flex flex-col sm:flex-row gap-2 items-center mb-2">
+                                <input type="text" id="scorer-name-${index}" class="input-field" placeholder="Nombre del goleador" list="player-names">
+                                <select id="scorer-team-${index}" class="input-field">
+                                    <option value="${match.team1}">${match.team1}</option>
+                                    <option value="${match.team2}">${match.team2}</option>
+                                </select>
+                                <button onclick="app.addScorer(${index})" class="btn btn-secondary p-2 whitespace-nowrap w-full sm:w-auto">Añadir Gol</button>
+                            </div>
+                            <ul id="scorers-list-${index}" class="space-y-1 text-xs">
+                                ${ (match.scorers || []).map((scorer, s_index) => `
+                                    <li class="flex justify-between items-center bg-gray-100 p-1 rounded">
+                                        <span>⚽ ${scorer.player} (${scorer.team})</span>
+                                        <button onclick="app.removeScorer(${index}, ${s_index})" class="text-red-500 hover:text-red-700 font-bold text-xs">X</button>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
                     </div>
-                `).join('');
+                `}).join('');
             }
             
             this.renderStandings = function() {
@@ -602,29 +763,58 @@
             
             this.renderFinalMatch = function() {
                 document.getElementById('final-match-section').classList.remove('hidden');
+                const isPlayed = this.finalMatch.played;
+                const readonlyAttr = isPlayed ? 'readonly' : '';
+                const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
+
                 document.getElementById('final-match-container').innerHTML = `
                     <div class="flex flex-col items-center gap-4">
-                        <div class="grid grid-cols-5 gap-2 items-center text-xl w-full max-w-md">
-                            <div class="col-span-2 text-right font-bold">${this.finalMatch.team1}</div>
-                            <div class="col-span-1 flex gap-2 justify-center">
-                                <input type="number" min="0" id="final-score1" class="input-field text-center w-16" value="${this.finalMatch.score1 ?? ''}">
-                                <span>-</span>
-                                <input type="number" min="0" id="final-score2" class="input-field text-center w-16" value="${this.finalMatch.score2 ?? ''}">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full max-w-lg">
+                            <div class="sm:w-1/3 text-center sm:text-right font-bold text-2xl">${this.finalMatch.team1}</div>
+                            <div class="flex items-center justify-center gap-2">
+                                <input type="number" min="0" id="final-score1" class="input-field text-center w-20 text-2xl font-bold ${readonlyClass}" value="${this.finalMatch.score1 ?? ''}" ${readonlyAttr}>
+                                <span class="font-bold text-gray-400 text-2xl">-</span>
+                                <input type="number" min="0" id="final-score2" class="input-field text-center w-20 text-2xl font-bold ${readonlyClass}" value="${this.finalMatch.score2 ?? ''}" ${readonlyAttr}>
                             </div>
-                            <div class="col-span-2 text-left font-bold">${this.finalMatch.team2}</div>
+                            <div class="sm:w-1/3 text-center sm:text-left font-bold text-2xl">${this.finalMatch.team2}</div>
                         </div>
-                        <div class="mt-2 flex items-center justify-center gap-2 w-full max-w-md">
+                        <div class="mt-2 flex flex-col sm:flex-row items-center justify-center gap-2 w-full max-w-lg">
                             <label for="final-best-player" class="text-sm font-semibold whitespace-nowrap">🏅 Mejor Jugador:</label>
-                            <input type="text" id="final-best-player" class="input-field" placeholder="Nombre del jugador" value="${this.finalMatch.bestPlayer || ''}" list="player-names">
+                            <input type="text" id="final-best-player" class="input-field ${readonlyClass}" placeholder="Nombre" value="${this.finalMatch.bestPlayer || ''}" list="player-names" ${readonlyAttr}>
                         </div>
-                        <button onclick="app.updateFinalScore()" class="btn btn-primary mt-2">Registrar Marcador Final</button>
-                    </div>`;
+                        <div id="final-buttons-container" class="mt-2">
+                            <button id="save-btn-final" onclick="app.updateFinalScore()" class="btn btn-primary ${isPlayed ? 'hidden' : ''}">Registrar Marcador Final</button>
+                            <button id="edit-btn-final" onclick="app.requestEditMatch(null, true)" class="btn btn-secondary ${!isPlayed ? 'hidden' : ''}">Editar Marcador Final</button>
+                        </div>
+                        <hr class="my-4 w-full">
+                        <div class="text-sm w-full max-w-md">
+                            <h4 class="font-semibold mb-2 text-center">Goles de la Final</h4>
+                            <div class="flex flex-col sm:flex-row gap-2 items-center mb-2">
+                                <input type="text" id="scorer-name-final" class="input-field" placeholder="Nombre del goleador" list="player-names">
+                                <select id="scorer-team-final" class="input-field">
+                                    <option value="${this.finalMatch.team1}">${this.finalMatch.team1}</option>
+                                    <option value="${this.finalMatch.team2}">${this.finalMatch.team2}</option>
+                                </select>
+                                <button onclick="app.addScorer(null, true)" class="btn btn-secondary p-2 whitespace-nowrap w-full sm:w-auto">Añadir Gol</button>
+                            </div>
+                            <ul class="space-y-1 text-xs">
+                                ${ (this.finalMatch.scorers || []).map((scorer, s_index) => `
+                                    <li class="flex justify-between items-center bg-gray-100 p-1 rounded">
+                                        <span>⚽ ${scorer.player} (${scorer.team})</span>
+                                        <button onclick="app.removeScorer(null, ${s_index}, true)" class="text-red-500 hover:text-red-700 font-bold text-xs">X</button>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
             }
         }
-
+        
         const app = new App();
         document.addEventListener('DOMContentLoaded', () => app.init());
-        window.app = app; // Hacer 'app' accesible globalmente para los onclick
+        window.app = app; 
+
     </script>
 </body>
 </html>
