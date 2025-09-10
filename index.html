@@ -34,6 +34,10 @@
             justify-content: center;
             gap: 0.5rem;
         }
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
         .btn-primary {
             background-color: #16a34a; /* green-600 */
         }
@@ -477,7 +481,8 @@
                             score2: null, 
                             played: false, 
                             bestPlayer: '', 
-                            scorers: [] 
+                            scorers: [],
+                            scorersConfirmed: false
                         });
                     }
                 }
@@ -495,19 +500,23 @@
 
                 if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
                     const match = this.schedule[index];
+                    const oldScorersTeam1 = match.scorers.filter(s => s.team === match.team1);
+                    const oldScorersTeam2 = match.scorers.filter(s => s.team === match.team2);
+                    
                     match.score1 = score1;
                     match.score2 = score2;
                     match.played = true;
                     match.bestPlayer = bestPlayer;
+                    match.scorersConfirmed = false;
 
-                    // NUEVO: Reinicia y crea los espacios para los goleadores
-                    match.scorers = [];
+                    const newScorers = [];
                     for (let i = 0; i < score1; i++) {
-                        match.scorers.push({ player: '', team: match.team1 });
+                        newScorers.push({ player: oldScorersTeam1[i]?.player || '', team: match.team1 });
                     }
                     for (let i = 0; i < score2; i++) {
-                        match.scorers.push({ player: '', team: match.team2 });
+                        newScorers.push({ player: oldScorersTeam2[i]?.player || '', team: match.team2 });
                     }
+                    match.scorers = newScorers;
                     
                     this.saveStateToFirestore();
                 } else {
@@ -531,7 +540,6 @@
                 });
             }
             
-            // NUEVO: Guarda los nombres de los goleadores al perder el foco del input
             this.saveScorers = function(matchIndex, isFinal = false) {
                 const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
                 if (!match) return;
@@ -539,13 +547,34 @@
                 const idPrefix = isFinal ? 'final' : matchIndex;
                 
                 match.scorers.forEach((scorer, scorerIndex) => {
+                    // This logic is tricky because the original index is lost after filtering.
+                    // We need a reliable way to map rendered inputs back to the main scorers array.
+                    // A better way is to iterate through the rendered inputs and find their original index.
                     const input = document.getElementById(`scorer-input-${idPrefix}-${scorerIndex}`);
                     if(input) {
-                       scorer.player = input.value.trim();
+                       // Find the actual scorer object in the main array to update
+                       const originalScorer = match.scorers[scorerIndex];
+                       if (originalScorer) {
+                           originalScorer.player = input.value.trim();
+                       }
                     }
                 });
+                
+                match.scorersConfirmed = true;
                 this.saveStateToFirestore();
+                this.showAlert('Goleadores guardados con éxito.');
             }
+            
+             this.requestEditScorers = function(matchIndex, isFinal = false) {
+                this.showPasswordConfirm("Introduce la clave para editar los goleadores.", () => {
+                    const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
+                    if (match) {
+                        match.scorersConfirmed = false;
+                        this.saveStateToFirestore();
+                    }
+                });
+            }
+
 
             this.calculateTeamStats = function() {
                 this.teams.forEach(team => { 
@@ -573,7 +602,17 @@
             this.checkIfTournamentFinished = function() {
                 const allPlayed = this.schedule.length > 0 && this.schedule.every(m => m.played);
                 if(allPlayed && !this.finalMatch && this.teams.length >= 2) {
-                   this.finalMatch = { team1: this.teams[0].name, team2: this.teams[1].name, score1: null, score2: null, played: false, winner: null, bestPlayer: '', scorers: [] };
+                   this.finalMatch = { 
+                       team1: this.teams[0].name, 
+                       team2: this.teams[1].name, 
+                       score1: null, 
+                       score2: null, 
+                       played: false, 
+                       winner: null, 
+                       bestPlayer: '', 
+                       scorers: [],
+                       scorersConfirmed: false
+                    };
                    this.saveStateToFirestore();
                 }
             }
@@ -585,6 +624,8 @@
 
                  if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
                     this.finalMatch.score1 = score1; this.finalMatch.score2 = score2; this.finalMatch.played = true; this.finalMatch.bestPlayer = bestPlayer;
+                    this.finalMatch.scorersConfirmed = false;
+
                     if (score1 > score2) { this.finalMatch.winner = this.finalMatch.team1; }
                     else if (score2 > score1) { this.finalMatch.winner = this.finalMatch.team2; }
                     else { 
@@ -593,13 +634,17 @@
                     }
 
                     if (this.finalMatch.played) {
-                        this.finalMatch.scorers = [];
+                        const oldScorersTeam1 = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team1);
+                        const oldScorersTeam2 = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team2);
+
+                        const newScorers = [];
                         for (let i = 0; i < score1; i++) {
-                            this.finalMatch.scorers.push({ player: '', team: this.finalMatch.team1 });
+                           newScorers.push({ player: oldScorersTeam1[i]?.player || '', team: this.finalMatch.team1 });
                         }
                         for (let i = 0; i < score2; i++) {
-                            this.finalMatch.scorers.push({ player: '', team: this.finalMatch.team2 });
+                           newScorers.push({ player: oldScorersTeam2[i]?.player || '', team: this.finalMatch.team2 });
                         }
+                         this.finalMatch.scorers = newScorers;
                     }
                     this.saveStateToFirestore();
                  } else { this.showAlert("Por favor, introduce un marcador válido."); }
@@ -620,14 +665,16 @@
 
             this.renderPlayerDatalist = function() {
                 const playerNames = new Set();
-                this.schedule.forEach(match => {
+                const allMatches = [...this.schedule];
+                if(this.finalMatch) allMatches.push(this.finalMatch);
+
+                allMatches.forEach(match => {
                     if (match.bestPlayer) playerNames.add(match.bestPlayer);
-                    if (match.scorers) match.scorers.forEach(s => playerNames.add(s.player));
+                    if (match.scorers) match.scorers.forEach(s => {
+                        if(s.player) playerNames.add(s.player)
+                    });
                 });
-                if (this.finalMatch) {
-                    if (this.finalMatch.bestPlayer) playerNames.add(this.finalMatch.bestPlayer);
-                    if (this.finalMatch.scorers) this.finalMatch.scorers.forEach(s => playerNames.add(s.player));
-                }
+
                 const datalist = document.getElementById('player-names');
                 datalist.innerHTML = Array.from(playerNames).filter(Boolean).map(name => `<option value="${name}"></option>`).join('');
             }
@@ -642,7 +689,7 @@
 
                 const scorerMap = new Map();
                 const allMatches = [...this.schedule];
-                if (this.finalMatch) allMatches.push(this.finalMatch);
+                if (this.finalMatch && this.finalMatch.played) allMatches.push(this.finalMatch);
 
                 allMatches.forEach(match => {
                     if(match.scorers) {
@@ -728,6 +775,10 @@
                     
                     const team1Scorers = match.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === match.team1);
                     const team2Scorers = match.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === match.team2);
+                    
+                    const scorersReadonlyAttr = match.scorersConfirmed ? 'readonly' : '';
+                    const scorersReadonlyClass = match.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
+
 
                     return `
                     <div class="border p-4 rounded-lg ${isPlayed ? 'bg-gray-50' : ''}">
@@ -768,11 +819,11 @@
                                             : team1Scorers.map((scorer, i) => `
                                                 <input type="text"
                                                     id="scorer-input-${index}-${scorer.originalIndex}"
-                                                    class="input-field"
+                                                    class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
                                                     list="player-names"
-                                                    onblur="app.saveScorers(${index})">
+                                                    ${scorersReadonlyAttr}>
                                             `).join('')}
                                     </div>
                                 </div>
@@ -784,19 +835,32 @@
                                             : team2Scorers.map((scorer, i) => `
                                                 <input type="text"
                                                     id="scorer-input-${index}-${scorer.originalIndex}"
-                                                    class="input-field"
+                                                    class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
                                                     list="player-names"
-                                                    onblur="app.saveScorers(${index})">
+                                                    ${scorersReadonlyAttr}>
                                             `).join('')}
                                     </div>
                                 </div>
                             </div>
+                            <div class="mt-4 flex justify-center">
+                                ${!match.scorersConfirmed ? `
+                                    <button onclick="app.saveScorers(${index})" class="btn btn-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <span>Confirmar Goleadores</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="app.requestEditScorers(${index})" class="btn btn-secondary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                        <span>Editar Goleadores</span>
+                                    </button>
+                                `}
+                            </div>
                         </div>
                         ` : ''}
                     </div>
-                `}).join('');
+                `;}).join('');
             }
             
             this.renderStandings = function() {
@@ -817,6 +881,9 @@
                 
                 const team1Scorers = this.finalMatch.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === this.finalMatch.team1);
                 const team2Scorers = this.finalMatch.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === this.finalMatch.team2);
+
+                const scorersReadonlyAttr = this.finalMatch.scorersConfirmed ? 'readonly' : '';
+                const scorersReadonlyClass = this.finalMatch.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
 
                 document.getElementById('final-match-container').innerHTML = `
                     <div class="flex flex-col items-center gap-4">
@@ -851,11 +918,11 @@
                                             : team1Scorers.map((scorer, i) => `
                                                 <input type="text"
                                                     id="scorer-input-final-${scorer.originalIndex}"
-                                                    class="input-field"
+                                                    class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
                                                     list="player-names"
-                                                    onblur="app.saveScorers(null, true)">
+                                                    ${scorersReadonlyAttr}>
                                             `).join('')}
                                     </div>
                                 </div>
@@ -867,14 +934,27 @@
                                             : team2Scorers.map((scorer, i) => `
                                                 <input type="text"
                                                     id="scorer-input-final-${scorer.originalIndex}"
-                                                    class="input-field"
+                                                    class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
                                                     list="player-names"
-                                                    onblur="app.saveScorers(null, true)">
+                                                    ${scorersReadonlyAttr}>
                                             `).join('')}
                                     </div>
                                 </div>
+                            </div>
+                             <div class="mt-4 flex justify-center">
+                                ${!this.finalMatch.scorersConfirmed ? `
+                                    <button onclick="app.saveScorers(null, true)" class="btn btn-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <span>Confirmar Goleadores</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="app.requestEditScorers(null, true)" class="btn btn-secondary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                        <span>Editar Goleadores</span>
+                                    </button>
+                                `}
                             </div>
                         </div>
                         ` : ''}
@@ -890,3 +970,4 @@
     </script>
 </body>
 </html>
+
