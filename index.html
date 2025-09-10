@@ -324,8 +324,27 @@
             
             // --- INICIALIZACIÓN Y GESTIÓN DE FIREBASE ---
             this.init = async function() {
+                // Mover el checkAuth al principio para que la UI de login esté siempre lista
+                this.checkAuth();
+
+                const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+                if (!configString) {
+                    const errorMsg = "La configuración de Firebase no está disponible. Asegúrate de que la variable de entorno '__firebase_config' esté configurada correctamente en tu entorno de despliegue.";
+                    console.error(errorMsg);
+                    this.showAlert(errorMsg); // Muestra el modal con el error
+                    // Oculta el login y muestra un mensaje de error permanente
+                    document.getElementById('login-title').textContent = "Error de Configuración";
+                    document.getElementById('login-subtitle').textContent = "No se pudo cargar la configuración de la base de datos.";
+                    document.getElementById('password-input').classList.add('hidden');
+                    document.getElementById('login-btn').classList.add('hidden');
+                    return; // Detiene la ejecución si no hay config
+                }
+
                 try {
-                    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                    const firebaseConfig = JSON.parse(configString);
+                    if (!firebaseConfig.projectId) {
+                        throw new Error("El 'projectId' es requerido en la configuración de Firebase.");
+                    }
                     const firebaseApp = initializeApp(firebaseConfig);
                     this.db = getFirestore(firebaseApp);
                     this.auth = getAuth(firebaseApp);
@@ -345,10 +364,8 @@
 
                 } catch (error) {
                     console.error("Error inicializando Firebase:", error);
-                    this.showAlert("No se pudo conectar a la base de datos en la nube.");
+                    this.showAlert(`Error al inicializar Firebase: ${error.message}`);
                 }
-
-                 this.checkAuth();
             }
             
             this.setupFirestoreListener = function() {
@@ -819,4 +836,3 @@
 </body>
 </html>
 
-<!-- Forzar actualización en Vercel -->
