@@ -287,41 +287,6 @@
                 };
             }
 
-            this.showPasswordConfirm = function(message, onConfirm) {
-                const modal = document.getElementById('modal');
-                document.getElementById('modal-message').innerHTML = `
-                    <p class="text-lg mb-4">${message}</p>
-                    <p class="text-sm text-gray-600 mb-4">Por seguridad, introduce tu clave para confirmar.</p>
-                    <input type="password" id="modal-password-input" class="input-field" placeholder="••••••••">
-                    <p id="modal-error" class="text-red-500 text-sm h-5 mt-1"></p>
-                `;
-                document.getElementById('modal-buttons').innerHTML = `
-                    <button onclick="app.hideModal()" class="btn btn-secondary">Cancelar</button>
-                    <button id="confirm-password-btn" class="btn btn-danger">Confirmar</button>
-                `;
-                modal.classList.remove('hidden');
-                
-                const confirmBtn = document.getElementById('confirm-password-btn');
-                const modalPasswordInput = document.getElementById('modal-password-input');
-                modalPasswordInput.focus();
-
-                const confirmationAction = () => {
-                    const password = modalPasswordInput.value;
-                    if (password === this.masterPassword) {
-                        this.hideModal();
-                        onConfirm();
-                    } else {
-                        document.getElementById('modal-error').textContent = 'Clave incorrecta.';
-                        modalPasswordInput.value = '';
-                    }
-                };
-                
-                confirmBtn.onclick = confirmationAction;
-                modalPasswordInput.onkeyup = (e) => {
-                    if (e.key === 'Enter') confirmationAction();
-                };
-            }
-
             this.hideModal = function() {
                 document.getElementById('modal').classList.add('hidden');
             }
@@ -460,7 +425,7 @@
             }
             
             this.clearTeams = function() {
-                 this.showPasswordConfirm("¿Estás seguro de que deseas eliminar todos los equipos?", () => {
+                 this.showConfirm("¿Estás seguro de que deseas eliminar todos los equipos? Esta acción es irreversible.", () => {
                     this.teams = [];
                     this.saveStateToFirestore();
                  });
@@ -525,7 +490,7 @@
             }
 
             this.requestEditMatch = function(index, isFinal = false) {
-                this.showPasswordConfirm("Introduce la clave para editar el marcador.", () => {
+                this.showConfirm("¿Deseas editar este marcador?", () => {
                     const idPrefix = isFinal ? 'final' : index;
                     document.getElementById(`score1-${idPrefix}`).readOnly = false;
                     document.getElementById(`score2-${idPrefix}`).readOnly = false;
@@ -546,17 +511,19 @@
 
                 const idPrefix = isFinal ? 'final' : matchIndex;
                 
-                match.scorers.forEach((scorer, scorerIndex) => {
-                    // This logic is tricky because the original index is lost after filtering.
-                    // We need a reliable way to map rendered inputs back to the main scorers array.
-                    // A better way is to iterate through the rendered inputs and find their original index.
-                    const input = document.getElementById(`scorer-input-${idPrefix}-${scorerIndex}`);
-                    if(input) {
-                       // Find the actual scorer object in the main array to update
-                       const originalScorer = match.scorers[scorerIndex];
-                       if (originalScorer) {
-                           originalScorer.player = input.value.trim();
-                       }
+                const team1ScorerInputs = Array.from(document.querySelectorAll(`#scorers-inputs-${idPrefix} > div:first-child input`));
+                const team2ScorerInputs = Array.from(document.querySelectorAll(`#scorers-inputs-${idPrefix} > div:last-child input`));
+
+                let team1ScorerIndex = 0;
+                let team2ScorerIndex = 0;
+
+                match.scorers.forEach(scorer => {
+                    if (scorer.team === match.team1) {
+                        scorer.player = team1ScorerInputs[team1ScorerIndex]?.value.trim() || '';
+                        team1ScorerIndex++;
+                    } else {
+                        scorer.player = team2ScorerInputs[team2ScorerIndex]?.value.trim() || '';
+                        team2ScorerIndex++;
                     }
                 });
                 
@@ -566,7 +533,7 @@
             }
             
              this.requestEditScorers = function(matchIndex, isFinal = false) {
-                this.showPasswordConfirm("Introduce la clave para editar los goleadores.", () => {
+                this.showConfirm("¿Deseas editar los goleadores de este partido?", () => {
                     const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
                     if (match) {
                         match.scorersConfirmed = false;
@@ -651,7 +618,7 @@
             }
             
             this.resetTournament = function() {
-                this.showPasswordConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual.", async () => {
+                this.showConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual. Esta acción es irreversible.", async () => {
                     if (!this.userId) return;
                     try {
                         const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
@@ -773,8 +740,8 @@
                     const readonlyAttr = isPlayed ? 'readonly' : '';
                     const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
                     
-                    const team1Scorers = match.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === match.team1);
-                    const team2Scorers = match.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === match.team2);
+                    const team1Scorers = match.scorers.filter(s => s.team === match.team1);
+                    const team2Scorers = match.scorers.filter(s => s.team === match.team2);
                     
                     const scorersReadonlyAttr = match.scorersConfirmed ? 'readonly' : '';
                     const scorersReadonlyClass = match.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
@@ -810,7 +777,7 @@
                         <hr class="my-4">
                         <div class="text-sm">
                             <h4 class="font-semibold mb-2 text-center">Registrar Goleadores</h4>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-4" id="scorers-inputs-${index}">
                                 <div>
                                     <p class="font-medium text-center mb-2">${match.team1}</p>
                                     <div class="space-y-2">
@@ -818,7 +785,6 @@
                                             ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
                                             : team1Scorers.map((scorer, i) => `
                                                 <input type="text"
-                                                    id="scorer-input-${index}-${scorer.originalIndex}"
                                                     class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
@@ -834,7 +800,6 @@
                                             ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
                                             : team2Scorers.map((scorer, i) => `
                                                 <input type="text"
-                                                    id="scorer-input-${index}-${scorer.originalIndex}"
                                                     class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
@@ -879,8 +844,8 @@
                 const readonlyAttr = isPlayed ? 'readonly' : '';
                 const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
                 
-                const team1Scorers = this.finalMatch.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === this.finalMatch.team1);
-                const team2Scorers = this.finalMatch.scorers.map((s, i) => ({...s, originalIndex: i})).filter(s => s.team === this.finalMatch.team2);
+                const team1Scorers = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team1);
+                const team2Scorers = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team2);
 
                 const scorersReadonlyAttr = this.finalMatch.scorersConfirmed ? 'readonly' : '';
                 const scorersReadonlyClass = this.finalMatch.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
@@ -909,7 +874,7 @@
                         <hr class="my-4 w-full">
                         <div class="text-sm w-full max-w-md">
                             <h4 class="font-semibold mb-2 text-center">Goleadores de la Final</h4>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-4" id="scorers-inputs-final">
                                 <div>
                                     <p class="font-medium text-center mb-2">${this.finalMatch.team1}</p>
                                     <div class="space-y-2">
@@ -917,7 +882,6 @@
                                             ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
                                             : team1Scorers.map((scorer, i) => `
                                                 <input type="text"
-                                                    id="scorer-input-final-${scorer.originalIndex}"
                                                     class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
@@ -933,7 +897,6 @@
                                             ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
                                             : team2Scorers.map((scorer, i) => `
                                                 <input type="text"
-                                                    id="scorer-input-final-${scorer.originalIndex}"
                                                     class="input-field ${scorersReadonlyClass}"
                                                     placeholder="Gol ${i + 1}"
                                                     value="${scorer.player || ''}"
