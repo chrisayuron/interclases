@@ -258,7 +258,7 @@
             this.db = null;
             this.auth = null;
             this.userId = null;
-            this.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            this.appId = 'default-app-id'; // Se mantiene un valor por defecto
             this.unsubscribe = null; // Para el listener de Firestore
 
             // --- MODAL ---
@@ -324,41 +324,44 @@
             
             // --- INICIALIZACIÓN Y GESTIÓN DE FIREBASE ---
             this.init = async function() {
-                // Mover el checkAuth al principio para que la UI de login esté siempre lista
                 this.checkAuth();
 
-                const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-                if (!configString) {
-                    const errorMsg = "La configuración de Firebase no está disponible. Asegúrate de que la variable de entorno '__firebase_config' esté configurada correctamente en tu entorno de despliegue.";
+                // CONFIGURACIÓN DE FIREBASE ---
+           
+
+                      const firebaseConfig = {
+                      apiKey: "AIzaSyDnnx...", // Tu clave real
+                      authDomain: "torneo-interclases.firebaseapp.com",
+                      projectId: "torneo-interclases",
+                      storageBucket: "torneo-interclases.firebasestorage.app",
+                      messagingSenderId: "676891636137",
+                      appId: "1:676891636137:web:06562e91b7680ad7ad54b8"
+                    };
+
+
+                if (!firebaseConfig) {
+                    const errorMsg = "La configuración de Firebase no se ha añadido al archivo. Edita 'organizador_torneo.html', busca la variable 'firebaseConfig' y pega allí tu configuración.";
                     console.error(errorMsg);
-                    this.showAlert(errorMsg); // Muestra el modal con el error
-                    // Oculta el login y muestra un mensaje de error permanente
                     document.getElementById('login-title').textContent = "Error de Configuración";
-                    document.getElementById('login-subtitle').textContent = "No se pudo cargar la configuración de la base de datos.";
+                    document.getElementById('login-subtitle').textContent = "La conexión a la base de datos no ha sido configurada. Por favor, edita el archivo HTML para añadirla.";
                     document.getElementById('password-input').classList.add('hidden');
                     document.getElementById('login-btn').classList.add('hidden');
-                    return; // Detiene la ejecución si no hay config
+                    this.showAlert(errorMsg);
+                    return; 
                 }
 
                 try {
-                    const firebaseConfig = JSON.parse(configString);
-                    if (!firebaseConfig.projectId) {
-                        throw new Error("El 'projectId' es requerido en la configuración de Firebase.");
-                    }
                     const firebaseApp = initializeApp(firebaseConfig);
                     this.db = getFirestore(firebaseApp);
                     this.auth = getAuth(firebaseApp);
+                    this.appId = firebaseConfig.appId || 'default-app-id'; // Usa el appId del config
 
                     onAuthStateChanged(this.auth, async (user) => {
                         if (user) {
                             this.userId = user.uid;
                             this.setupFirestoreListener();
                         } else {
-                            if (typeof __initial_auth_token !== 'undefined') {
-                                await signInWithCustomToken(this.auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(this.auth);
-                            }
+                            await signInAnonymously(this.auth);
                         }
                     });
 
@@ -394,7 +397,7 @@
                 try {
                     const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
                     await setDoc(docRef, {
-                        teams: JSON.parse(JSON.stringify(this.teams)), // Limpiar objetos para Firestore
+                        teams: JSON.parse(JSON.stringify(this.teams)), 
                         schedule: JSON.parse(JSON.stringify(this.schedule)),
                         finalMatch: JSON.parse(JSON.stringify(this.finalMatch)),
                     });
@@ -835,4 +838,7 @@
     </script>
 </body>
 </html>
+
+
+        
 
