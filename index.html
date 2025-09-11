@@ -227,8 +227,7 @@
                     <div id="top-scorers-section" class="card hidden">
                         <h2 class="text-2xl font-bold mb-4 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                            </svg>
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
                             Goleadores del Torneo
                         </h2>
                         <div class="overflow-x-auto">
@@ -274,14 +273,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const App = function() {
             // Estado local de la aplicación
             this.teams = [];
             this.schedule = [];
             this.finalMatch = null;
-            this.masterPassword = 'profezor123';
             this.isAuthenticated = false;
             this.initialLoadComplete = false;
             
@@ -420,19 +418,38 @@
                 passwordInput.onkeyup = (e) => { if (e.key === 'Enter') this.verifyPassword(); };
             }
 
-            this.verifyPassword = function() {
+            this.verifyPassword = async function() {
                 const passwordInput = document.getElementById('password-input');
                 const loginError = document.getElementById('login-error');
-                if (passwordInput.value === this.masterPassword) {
-                    this.isAuthenticated = true;
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('app').classList.remove('hidden');
-                    loginError.textContent = '';
-                    passwordInput.value = '';
-                    this.renderAll();
-                } else {
-                    loginError.textContent = 'Clave incorrecta. Inténtalo de nuevo.';
-                    passwordInput.value = '';
+                const loginBtn = document.getElementById('login-btn');
+                loginBtn.disabled = true;
+
+                try {
+                    const configRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/config");
+                    const configSnap = await getDoc(configRef);
+
+                    if (configSnap.exists() && configSnap.data().masterPassword) {
+                        const masterPassword = configSnap.data().masterPassword;
+                        if (passwordInput.value === masterPassword) {
+                            this.isAuthenticated = true;
+                            document.getElementById('login-screen').classList.add('hidden');
+                            document.getElementById('app').classList.remove('hidden');
+                            loginError.textContent = '';
+                            passwordInput.value = '';
+                            this.renderAll();
+                        } else {
+                            loginError.textContent = 'Clave incorrecta. Inténtalo de nuevo.';
+                            passwordInput.value = '';
+                        }
+                    } else {
+                        loginError.textContent = 'Error: La clave no está configurada en la BD.';
+                         this.showAlert("Error: La contraseña maestra no está configurada en la base de datos. Sigue las instrucciones para añadirla.");
+                    }
+                } catch (error) {
+                    console.error("Error verifying password:", error);
+                    loginError.textContent = 'Error al verificar. Intenta de nuevo.';
+                } finally {
+                    loginBtn.disabled = false;
                 }
             }
 
@@ -773,7 +790,7 @@
             
             this.renderSchedule = function() {
                 const section = document.getElementById('schedule-section');
-                section.classList.toggle('hidden', this.schedule.length === 0 && !document.getElementById('no-data-notification').classList.contains('hidden'));
+                section.classList.toggle('hidden', this.schedule.length === 0 && document.getElementById('no-data-notification').classList.contains('hidden'));
                 
                 const list = document.getElementById('schedule-list');
                 list.innerHTML = this.schedule.map((match, index) => {
@@ -871,7 +888,7 @@
             
             this.renderStandings = function() {
                 const section = document.getElementById('standings-section');
-                section.classList.toggle('hidden', this.schedule.length === 0 && !document.getElementById('no-data-notification').classList.contains('hidden'));
+                section.classList.toggle('hidden', this.schedule.length === 0 && document.getElementById('no-data-notification').classList.contains('hidden'));
                 const body = document.getElementById('standings-body');
                 body.innerHTML = this.teams.map((team, index) => `
                     <tr class="${index < 2 ? 'bg-green-100' : ''} hover:bg-gray-50">
