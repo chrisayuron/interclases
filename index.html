@@ -344,6 +344,12 @@
                     onAuthStateChanged(this.auth, async (user) => {
                         if (user) {
                             this.userId = user.uid;
+                            if (!this.initialLoadComplete) {
+                                this.initialLoadComplete = true;
+                                document.getElementById('loading-screen').classList.add('hidden');
+                                document.getElementById('login-screen').classList.remove('hidden');
+                                this.checkAuth();
+                            }
                             this.setupFirestoreListener();
                         } else {
                            try {
@@ -368,13 +374,6 @@
                 
                 const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
                 this.unsubscribe = onSnapshot(mainStateRef, (docSnap) => {
-                    if (!this.initialLoadComplete) {
-                        this.initialLoadComplete = true;
-                        document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('login-screen').classList.remove('hidden');
-                        this.checkAuth();
-                    }
-
                     if (docSnap.exists()) {
                         const state = docSnap.data();
                         this.teams = state.teams || [];
@@ -991,3 +990,4 @@
     </script>
 </body>
 </html>
+
