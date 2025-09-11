@@ -273,7 +273,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const App = function() {
             // Estado local de la aplicación
@@ -366,8 +366,8 @@
             this.setupFirestoreListener = function() {
                 if (this.unsubscribe) this.unsubscribe(); 
                 
-                const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
-                this.unsubscribe = onSnapshot(docRef, (docSnap) => {
+                const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                this.unsubscribe = onSnapshot(mainStateRef, (docSnap) => {
                     if (!this.initialLoadComplete) {
                         this.initialLoadComplete = true;
                         document.getElementById('loading-screen').classList.add('hidden');
@@ -398,8 +398,8 @@
             this.saveStateToFirestore = async function() {
                 if (!this.userId) return;
                 try {
-                    const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
-                    await setDoc(docRef, {
+                    const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                    await setDoc(mainStateRef, {
                         teams: JSON.parse(JSON.stringify(this.teams)), 
                         schedule: JSON.parse(JSON.stringify(this.schedule)),
                         finalMatch: JSON.parse(JSON.stringify(this.finalMatch)),
@@ -425,7 +425,7 @@
                 loginBtn.disabled = true;
 
                 try {
-                    const configRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/config");
+                    const configRef = doc(this.db, "tournaments", this.appId, "config", "master");
                     const configSnap = await getDoc(configRef);
 
                     if (configSnap.exists() && configSnap.data().masterPassword) {
@@ -677,8 +677,8 @@
                 this.showConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual. Esta acción es irreversible.", async () => {
                     if (!this.userId) return;
                     try {
-                        const docRef = doc(this.db, "artifacts", this.appId, "public/data/tournament/mainState");
-                        await deleteDoc(docRef);
+                        const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                        await deleteDoc(mainStateRef);
                     } catch (error) {
                          console.error("Error al reiniciar el torneo:", error);
                         this.showAlert("No se pudo reiniciar el torneo.");
@@ -991,4 +991,3 @@
     </script>
 </body>
 </html>
-
