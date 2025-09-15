@@ -240,6 +240,7 @@
             this.teams = [];
             this.schedule = [];
             this.finalMatch = null;
+            this.masterPassword = '';
             this.isAuthenticated = false;
             this.initialLoadComplete = false;
             
@@ -271,6 +272,7 @@
 
             this.showPasswordConfirm = function(message, onConfirm) {
                 const modal = document.getElementById('modal');
+                const passwordInput = document.getElementById('password-input');
                 document.getElementById('modal-message').innerHTML = `
                     <p class="text-lg mb-4">${message}</p>
                     <p class="text-sm text-gray-600 mb-4">Por seguridad, introduce tu clave para confirmar.</p>
@@ -284,7 +286,7 @@
                 const modalPasswordInput = document.getElementById('modal-password-input');
                 modalPasswordInput.focus();
                 const confirmationAction = () => {
-                    if (passwordInput.value === this.masterPassword) {
+                    if (modalPasswordInput.value === this.masterPassword) {
                         this.hideModal(); onConfirm();
                     } else {
                         document.getElementById('modal-error').textContent = 'Clave incorrecta.';
@@ -301,7 +303,7 @@
             this.init = async function() {
                 try {
                     const response = await fetch('/api/get-config');
-                    if (!response.ok) throw new Error('No se pudo obtener la configuración del servidor.');
+                    if (!response.ok) throw new Error('No se pudo obtener la configuración del servidor. Revisa que el archivo /api/get-config.js exista y las variables de entorno en Vercel estén configuradas.');
                     const firebaseConfig = await response.json();
 
                     const firebaseApp = initializeApp(firebaseConfig);
@@ -326,7 +328,7 @@
                     });
                 } catch (error) {
                     console.error("Error crítico de inicialización:", error);
-                    document.getElementById('loading-screen').innerHTML = `<p class="text-red-500 font-semibold">Error al cargar la aplicación: ${error.message}</p>`;
+                    document.getElementById('loading-screen').innerHTML = `<p class="text-red-500 font-semibold p-4 text-center">Error al cargar la aplicación: ${error.message}</p>`;
                 }
             }
             
@@ -406,7 +408,6 @@
                 let teams = [...this.teams.map(t => t.name)];
                 const schedule = [];
                 
-                // Si el número de equipos es impar, se añade un equipo "fantasma" para el descanso
                 if (teams.length % 2 !== 0) {
                     teams.push("descanso");
                 }
@@ -421,7 +422,6 @@
                         const team2 = teams[teams.length - 1 - i];
 
                         if (team1 !== "descanso" && team2 !== "descanso") {
-                            // Alternar equipo local y visitante en cada jornada
                             const match = (round % 2 === 0) 
                                 ? { team1: team1, team2: team2 } 
                                 : { team1: team2, team2: team1 };
@@ -435,7 +435,6 @@
                     }
                     schedule.push({ round: round + 1, matches: roundMatches });
 
-                    // Rotar los equipos, manteniendo el primero fijo
                     const lastTeam = teams.pop();
                     teams.splice(1, 0, lastTeam);
                 }
@@ -600,7 +599,7 @@
                 document.getElementById('clear-teams-btn').classList.toggle('hidden', this.teams.length === 0);
                 const hasData = this.teams.length > 0 || this.schedule.length > 0;
                 document.getElementById('reset-tournament-btn').classList.toggle('hidden', !hasData);
-                document.getElementById('generate-schedule-btn').disabled = this.teams.length < 2 || schedule.length > 0;
+                document.getElementById('generate-schedule-btn').disabled = this.teams.length < 2 || this.schedule.length > 0;
             }
             
             this.renderSchedule = function() {
