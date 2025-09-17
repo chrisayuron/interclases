@@ -113,7 +113,6 @@
             <div class="card text-center">
                 <h2 id="login-title" class="text-2xl font-bold mb-4">Acceso Protegido</h2>
                 <p id="login-subtitle" class="text-gray-600 mb-6">Por favor, introduce la clave maestra para continuar.</p>
-                <!-- INICIO CAMBIO: Contraseña con visibilidad -->
                 <div class="relative mb-4">
                     <input type="password" id="password-input" class="input-field pr-10" placeholder="••••••••">
                     <button id="toggle-password-btn" onclick="app.togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none">
@@ -122,12 +121,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                         <svg id="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67.111 2.457.311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20" />
                         </svg>
                     </button>
                 </div>
-                <!-- FIN CAMBIO -->
                 <p id="login-error" class="text-red-500 text-sm mb-4 h-5"></p>
                 <button id="login-btn" class="btn btn-primary w-full">Continuar</button>
             </div>
@@ -145,7 +143,6 @@
             <p class="text-lg text-gray-600 mt-2">Gestiona los equipos, partidos y clasificaciones de forma fácil y rápida.</p>
         </header>
 
-        <!-- Banner del Ganador -->
         <div id="winner-section" class="hidden card winner-banner">
             <h2 class="text-3xl font-bold mb-2">¡TENEMOS UN CAMPEÓN!</h2>
             <p id="winner-name" class="text-5xl font-extrabold"></p>
@@ -154,7 +151,6 @@
 
         <div id="main-content">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Columna de Configuración -->
                 <div class="lg:col-span-1">
                     <div id="config-panel">
                         <div class="card">
@@ -188,7 +184,6 @@
                     </div>
                 </div>
 
-                <!-- Columna de Partidos y Clasificación -->
                 <div class="lg:col-span-2">
                     <div id="schedule-section" class="space-y-6 hidden"></div>
                     <div id="standings-and-scorers" class="space-y-6 hidden">
@@ -392,7 +387,6 @@
                 }
             }
             
-            // INICIO CAMBIO: Nueva función para mostrar/ocultar contraseña
             this.togglePasswordVisibility = function() {
                 const passwordInput = document.getElementById('password-input');
                 const eyeIcon = document.getElementById('eye-icon');
@@ -408,7 +402,6 @@
                     eyeSlashIcon.classList.add('hidden');
                 }
             }
-            // FIN CAMBIO
             
             this.addTeam = function() {
                 if (this.schedule.length > 0) return;
@@ -434,42 +427,73 @@
                  });
             }
             
-            // INICIO CAMBIO: Nueva lógica para generar calendario
+            // INICIO CAMBIO: Híbrido - Asegura 1ro vs 2do y luego Round-Robin
             this.generateSchedule = function() {
                 if (this.teams.length < 2) {
                     this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
                     return;
                 }
 
-                const teamsToSchedule = [...this.teams.map(t => t.name)];
+                let teams = [...this.teams.map(t => t.name)];
                 const schedule = [];
-                let roundCounter = 1;
 
-                // Iteramos por la lista de equipos, tomándolos de dos en dos.
-                for (let i = 0; i < teamsToSchedule.length; i += 2) {
-                    // Verificamos si hay un equipo siguiente para formar una pareja.
-                    if (i + 1 < teamsToSchedule.length) {
-                        const team1 = teamsToSchedule[i];
-                        const team2 = teamsToSchedule[i + 1];
+                if (teams.length % 2 !== 0) {
+                    teams.push("descanso");
+                }
 
-                        const match = {
-                            team1: team1,
-                            team2: team2,
-                            score1: null,
-                            score2: null,
-                            played: false,
-                            bestPlayer: '',
-                            scorers: []
-                        };
-                        
-                        // Cada partido es una jornada separada, cumpliendo "un partido por día".
-                        schedule.push({ round: roundCounter, matches: [match] });
-                        roundCounter++;
+                const numTeams = teams.length;
+                const numRounds = numTeams - 1;
+
+                for (let round = 0; round < numRounds; round++) {
+                    const roundMatches = [];
+                    for (let i = 0; i < numTeams / 2; i++) {
+                        const team1 = teams[i];
+                        const team2 = teams[numTeams - 1 - i];
+
+                        if (team1 !== "descanso" && team2 !== "descanso") {
+                             const match = (round % 2 === 1) 
+                                ? { team1: team1, team2: team2 } 
+                                : { team1: team2, team2: team1 };
+                            roundMatches.push({
+                                ...match,
+                                score1: null, score2: null, played: false, 
+                                bestPlayer: '', scorers: []
+                            });
+                        }
+                    }
+                    schedule.push({ round: round + 1, matches: roundMatches });
+
+                    const lastTeam = teams.pop();
+                    teams.splice(1, 0, lastTeam);
+                }
+
+                // Ahora, forzamos que el partido 1ro vs 2do sea en la Jornada 1.
+                const team1Name = this.teams[0].name;
+                const team2Name = this.teams[1].name;
+                let targetRoundIndex = -1;
+
+                // Buscamos la jornada donde se enfrentan el equipo 1 y 2.
+                for (let i = 0; i < schedule.length; i++) {
+                    const foundMatch = schedule[i].matches.find(m =>
+                        (m.team1 === team1Name && m.team2 === team2Name) ||
+                        (m.team1 === team2Name && m.team2 === team1Name)
+                    );
+                    if (foundMatch) {
+                        targetRoundIndex = i;
+                        break;
                     }
                 }
-                
-                // Si hay un número impar de equipos, el último quedará sin partido en esta ronda.
-                // El bucle lo ignora automáticamente, lo cual es un manejo adecuado.
+
+                // Si encontramos la jornada y no es la primera, la movemos al inicio.
+                if (targetRoundIndex > 0) {
+                    const targetRound = schedule.splice(targetRoundIndex, 1)[0];
+                    schedule.unshift(targetRound);
+                }
+
+                // Finalmente, re-numeramos todas las jornadas para que queden en orden (1, 2, 3...).
+                schedule.forEach((round, index) => {
+                    round.round = index + 1;
+                });
 
                 this.schedule = schedule;
                 this.saveStateToFirestore();
