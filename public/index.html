@@ -121,7 +121,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                         <svg id="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057-5.064 7-9.542 7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20" />
                         </svg>
                     </button>
@@ -427,30 +427,25 @@
                  });
             }
             
-            // INICIO CAMBIO: Desagrupar jornadas a un partido por día
             this.generateSchedule = function() {
                 if (this.teams.length < 2) {
                     this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
                     return;
                 }
 
-                // 1. Generar el calendario justo con el método Round-Robin
+                // 1. Generate all possible matches using a standard round-robin algorithm.
                 let teams = [...this.teams.map(t => t.name)];
                 const groupedSchedule = [];
-
                 if (teams.length % 2 !== 0) {
                     teams.push("descanso");
                 }
-
                 const numTeams = teams.length;
                 const numRounds = numTeams - 1;
-
                 for (let round = 0; round < numRounds; round++) {
                     const roundMatches = [];
                     for (let i = 0; i < numTeams / 2; i++) {
                         const team1 = teams[i];
                         const team2 = teams[numTeams - 1 - i];
-
                         if (team1 !== "descanso" && team2 !== "descanso") {
                              const match = (round % 2 === 1) 
                                 ? { team1: team1, team2: team2 } 
@@ -462,56 +457,53 @@
                             });
                         }
                     }
-                    groupedSchedule.push({ round: round + 1, matches: roundMatches });
-
+                    groupedSchedule.push(roundMatches);
                     const lastTeam = teams.pop();
                     teams.splice(1, 0, lastTeam);
                 }
+                let remainingMatches = groupedSchedule.flat();
 
-                // 2. Forzar que el partido 1ro vs 2do ocurra primero.
+                // 2. Extract the match between the first two registered teams to ensure it's played first.
                 const team1Name = this.teams[0].name;
                 const team2Name = this.teams[1].name;
                 let firstMatch = null;
-
-                // Buscamos y extraemos el partido 1 vs 2
-                for (let i = 0; i < groupedSchedule.length; i++) {
-                    const matchIndex = groupedSchedule[i].matches.findIndex(m =>
-                        (m.team1 === team1Name && m.team2 === team2Name) ||
-                        (m.team1 === team2Name && m.team2 === team1Name)
-                    );
-                    if (matchIndex !== -1) {
-                        firstMatch = groupedSchedule[i].matches.splice(matchIndex, 1)[0];
-                        // Si la jornada original queda vacía después de quitar el partido, eliminamos la jornada.
-                        if (groupedSchedule[i].matches.length === 0) {
-                            groupedSchedule.splice(i, 1);
-                        }
-                        break;
-                    }
+                const firstMatchIndex = remainingMatches.findIndex(m =>
+                    (m.team1 === team1Name && m.team2 === team2Name) ||
+                    (m.team1 === team2Name && m.team2 === team1Name)
+                );
+                if (firstMatchIndex !== -1) {
+                    firstMatch = remainingMatches.splice(firstMatchIndex, 1)[0];
                 }
-
-                // 3. Aplanar el calendario: convertir cada partido restante en una jornada individual.
-                const flatSchedule = [];
-                groupedSchedule.forEach(round => {
-                    round.matches.forEach(match => {
-                        flatSchedule.push({ round: 0, matches: [match] }); // El 'round' se re-numerará después
-                    });
-                });
-
-                // 4. Colocar el partido 1ro vs 2do al inicio de la lista.
+                
+                // 3. Build the final schedule intelligently, ensuring teams get a break.
+                const finalSchedule = [];
                 if (firstMatch) {
-                    flatSchedule.unshift({ round: 0, matches: [firstMatch] });
+                    finalSchedule.push(firstMatch);
                 }
+                let lastTeamsPlayed = firstMatch ? [firstMatch.team1, firstMatch.team2] : [];
 
-                // 5. Re-numerar todas las "jornadas" (que ahora son partidos individuales).
-                flatSchedule.forEach((round, index) => {
-                    round.round = index + 1;
-                });
+                while (remainingMatches.length > 0) {
+                    let nextMatchIndex = remainingMatches.findIndex(match => 
+                        !lastTeamsPlayed.includes(match.team1) && !lastTeamsPlayed.includes(match.team2)
+                    );
+                    
+                    if (nextMatchIndex === -1) {
+                        nextMatchIndex = 0;
+                    }
+                    
+                    const nextMatch = remainingMatches.splice(nextMatchIndex, 1)[0];
+                    finalSchedule.push(nextMatch);
+                    lastTeamsPlayed = [nextMatch.team1, nextMatch.team2];
+                }
+                
+                // 4. Assign final round numbers and save the newly ordered schedule.
+                this.schedule = finalSchedule.map((match, index) => ({
+                    round: index + 1,
+                    matches: [match]
+                }));
 
-                this.schedule = flatSchedule;
                 this.saveStateToFirestore();
             }
-            // FIN CAMBIO
-
 
             this.updateScore = function(roundIndex, matchIndex) {
                 const match = this.schedule[roundIndex].matches[matchIndex];
