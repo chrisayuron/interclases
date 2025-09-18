@@ -427,15 +427,16 @@
                  });
             }
             
-            // INICIO CAMBIO: Híbrido - Asegura 1ro vs 2do y luego Round-Robin
+            // INICIO CAMBIO: Desagrupar jornadas a un partido por día
             this.generateSchedule = function() {
                 if (this.teams.length < 2) {
                     this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
                     return;
                 }
 
+                // 1. Generar el calendario justo con el método Round-Robin
                 let teams = [...this.teams.map(t => t.name)];
-                const schedule = [];
+                const groupedSchedule = [];
 
                 if (teams.length % 2 !== 0) {
                     teams.push("descanso");
@@ -461,44 +462,56 @@
                             });
                         }
                     }
-                    schedule.push({ round: round + 1, matches: roundMatches });
+                    groupedSchedule.push({ round: round + 1, matches: roundMatches });
 
                     const lastTeam = teams.pop();
                     teams.splice(1, 0, lastTeam);
                 }
 
-                // Ahora, forzamos que el partido 1ro vs 2do sea en la Jornada 1.
+                // 2. Forzar que el partido 1ro vs 2do ocurra primero.
                 const team1Name = this.teams[0].name;
                 const team2Name = this.teams[1].name;
-                let targetRoundIndex = -1;
+                let firstMatch = null;
 
-                // Buscamos la jornada donde se enfrentan el equipo 1 y 2.
-                for (let i = 0; i < schedule.length; i++) {
-                    const foundMatch = schedule[i].matches.find(m =>
+                // Buscamos y extraemos el partido 1 vs 2
+                for (let i = 0; i < groupedSchedule.length; i++) {
+                    const matchIndex = groupedSchedule[i].matches.findIndex(m =>
                         (m.team1 === team1Name && m.team2 === team2Name) ||
                         (m.team1 === team2Name && m.team2 === team1Name)
                     );
-                    if (foundMatch) {
-                        targetRoundIndex = i;
+                    if (matchIndex !== -1) {
+                        firstMatch = groupedSchedule[i].matches.splice(matchIndex, 1)[0];
+                        // Si la jornada original queda vacía después de quitar el partido, eliminamos la jornada.
+                        if (groupedSchedule[i].matches.length === 0) {
+                            groupedSchedule.splice(i, 1);
+                        }
                         break;
                     }
                 }
 
-                // Si encontramos la jornada y no es la primera, la movemos al inicio.
-                if (targetRoundIndex > 0) {
-                    const targetRound = schedule.splice(targetRoundIndex, 1)[0];
-                    schedule.unshift(targetRound);
+                // 3. Aplanar el calendario: convertir cada partido restante en una jornada individual.
+                const flatSchedule = [];
+                groupedSchedule.forEach(round => {
+                    round.matches.forEach(match => {
+                        flatSchedule.push({ round: 0, matches: [match] }); // El 'round' se re-numerará después
+                    });
+                });
+
+                // 4. Colocar el partido 1ro vs 2do al inicio de la lista.
+                if (firstMatch) {
+                    flatSchedule.unshift({ round: 0, matches: [firstMatch] });
                 }
 
-                // Finalmente, re-numeramos todas las jornadas para que queden en orden (1, 2, 3...).
-                schedule.forEach((round, index) => {
+                // 5. Re-numerar todas las "jornadas" (que ahora son partidos individuales).
+                flatSchedule.forEach((round, index) => {
                     round.round = index + 1;
                 });
 
-                this.schedule = schedule;
+                this.schedule = flatSchedule;
                 this.saveStateToFirestore();
             }
             // FIN CAMBIO
+
 
             this.updateScore = function(roundIndex, matchIndex) {
                 const match = this.schedule[roundIndex].matches[matchIndex];
